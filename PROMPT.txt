@@ -1,0 +1,87 @@
+--------------------------------------------------------------------
+Protocol Scenario Guidelines 
+--------------------------------------------------------------------
+
+Find a reliable method of communication among a group of uav nodes using User Datagram Protocol (UDP). 
+The purpose is to establish an agreement protocol among the uav nodes for each to match to a unique target once the target is within range. (See uav-target-demo.mp4)
+
+	Sample Mission Scenario:
+	- Each UAV can track only one target at a time
+	- Once tracking a target, a UAV “locks” on it
+	- Does not switch targets unless the current one gets out of range
+
+	Simple Algorithm:
+	- Find a target
+	- If the target is already tracked, then search for another one
+	- If the target is not tracked, then advertise to others that the target is now tracked
+	- Start tracking the target
+
+
+Assume the following: 
+
+	- Equal number of UAV nodes and targets. For this scenario (see uav8-notrack.imn), there are 8 UAVs and 8 targets. 
+	- Each UAV nodes should track a unique target. No two nodes should track the same target.
+	- Once a UAV selects a target to track, the decision cannot be changed until the target is moved out of range.
+	- Up to 30% packet loss and 20 ms delay.	
+	- UAVs should be within range of each other for communication. Do not need to account for loss of range among UAVs.
+	- Each UAV can already know of the other UAVs and targets. Other node ids can be read as an argument parameters.  
+	- UAVs are pretty close to one another. So, multiple UAVs can detect the same target within its range. 
+	  An agreement protocol must be established on which UAV should take that target.
+	- Although each UAV node may know of the other UAV and targets node ids, avoid assigning arbitrary numbering to match UAV node to target. 
+	  (Ex. uavnode n1 always matches with targetnode n11.) The UAV nodes should communicate using an agreement protocol to decide which UAV should take target. 
+
+
+Additional Requirements:
+
+	- Once UAV finds target, update coloring of UAV to match target. Each target should have a unique color assigned. (See color_node.py)  
+	- UAV should have simulated movement in a circular pattern. Once UAV finds a target, advance UAV towards a target and then move in a circle pattern around it. (See move_node.py)
+	- Incorporate existing modules: uav8-notrack.imn, color_nodes.py, move_node.py
+	- Should be able to run with below testing scripts/modules. 
+	  (Note: test script 'start_testing.sh' relies on the changes to the wypt files in '/tmp' folder to track when last UAV nodes tracks the last UAV target
+
+(***Note: There are hard-coded absolute paths in the .imn file and the .py and .sh scripts. Likely they won't work out of the box and need to be changed.)
+
+
+--------------------------------------------------------------------
+Testing Scenario
+--------------------------------------------------------------------
+
+Entire group set of targets should be moved within range of UAVs. The testing scenario is complete once the last UAV finds its target. 
+Ideally, each UAV nodes should match with a unique target. 
+
+Testing measurements:
+	- Latency is measured from when the group of targets are placed within range of the UAVs to when the last UAV node tracks a target. 
+	- Throughput is measured in kbps using tcpdump and then plotted using trpr and gnuplot.
+
+The following video files demonstrate the test scenario: 
+    - uav-test-demo.mp4           -- A demo to show each UAV should match to a unique target once targets are within range.
+    - uav-test-udp-test.mp4    -- A demo to show how to use udp demo and testing module. Notice, since only udp is used, there are duplicate UAVs tracking the same target.  
+
+--------------------------------------------------------------------
+Testing Script
+--------------------------------------------------------------------
+	
+Once the UAV protocol scenario is running, the testing scenario should be runned.
+
+	1. Run uav test script scenario to measure latency and throughput. 
+
+		./start_testing.sh
+
+	Note: 	[1] The test script 'start_testing.sh' tracks the latency and throughput of the testing protocol. 
+			Within the test script, 'test_uavs.py' is called, which moves all nodes within range and waits until all uav nodes track a target.
+			[2] Once the test script is finished, search for the following files: 
+				gedit /tmp/norm_latency_avg.log
+				eog $(file_dir)/uavs_throughput_plot.png 
+				
+				*** $(file_dir) needs to be replaced with the directory of the file.
+
+	2. (Optional) Run uav python file to only measure latency.
+
+	Example:[1]	python $(file_dir)/test_uavs.py -u 1 2 3 4 6 7 8 9 -t 11 12 13 14 16 17 18 19 -l 6		# 6 Runs
+			[2] python $(file_dir)/test_uavs.py -u 1 2 3 4 6 7 8 9 -t 11 12 13 14 16 17 18 19 -l 2		# 2 Runs
+
+	Note: 	[1] $(file_dir) needs to be replaced with the directory of the file.
+			[2] Once the test script is finished, search for the following file to view latency log file: 
+				gedit /tmp/norm_latency_avg.log
+		
+
